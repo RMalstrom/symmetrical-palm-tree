@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arcane Archer: Ascension</title>
+<style>
+  :root{
+    --bg-top:#8ecae6;
+    --bg-bot:#fefae0;
+    --panel:#1b1530ee;
+    --panel-2:#241b3dee;
+    --accent:#c9a4ff;
+    --accent-2:#7dd3fc;
+    --gold:#ffd76a;
+    --text:#f2ecff;
+    --text-dim:#b8aed6;
+    --border:#3a2c63;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+    background:#0d0a1a;
+    color:var(--text);
+    overflow-x:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    padding:10px 18px;
+    background:linear-gradient(180deg,#150f28,#0d0a1a);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  header h1{
+    font-size:1.1rem;
+    margin:0;
+    letter-spacing:.5px;
+    color:var(--gold);
+    text-shadow:0 0 8px #ffd76a55;
+  }
+  header h1 span{color:var(--text-dim);font-weight:normal;font-size:.75rem;display:block;margin-top:2px;}
+  #resourceDisplay{
+    text-align:right;
+    font-size:1rem;
+  }
+  #manaCount{font-size:1.35rem;font-weight:bold;color:var(--accent-2);text-shadow:0 0 6px #7dd3fc66;}
+  #manaRate{color:var(--text-dim);font-size:.8rem;}
+  #headerButtons{display:flex;gap:6px;}
+  .iconbtn{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:6px;
+    padding:6px 10px;
+    cursor:pointer;
+    font-size:.85rem;
+  }
+  .iconbtn:hover{border-color:var(--accent);}
+
+  /* ---------- MAIN LAYOUT ---------- */
+  main{
+    flex:1;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    padding:14px;
+    max-width:1200px;
+    margin:0 auto;
+    width:100%;
+  }
+
+  /* ---------- SCENE ---------- */
+  #sceneCol{
+    flex:1 1 380px;
+    min-width:300px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  #scene{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    border-radius:16px;
+    overflow:hidden;
+    background:linear-gradient(180deg,var(--bg-top),var(--bg-bot));
+    transition:background 2.5s ease;
+    border:1px solid var(--border);
+    cursor:pointer;
+    user-select:none;
+    touch-action:manipulation;
+    box-shadow:0 10px 30px #00000066;
+  }
+  #stars{
+    position:absolute;inset:0;
+    opacity:0;
+    transition:opacity 2.5s ease;
+    pointer-events:none;
+  }
+  .star{
+    position:absolute;
+    width:2px;height:2px;
+    background:#fff;
+    border-radius:50%;
+    animation:twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle{0%,100%{opacity:.2;}50%{opacity:1;}}
+
+  #nebula{
+    position:absolute;inset:0;
+    background:radial-gradient(circle at 70% 20%, #a855f755, transparent 60%),
+               radial-gradient(circle at 20% 80%, #38bdf855, transparent 55%);
+    opacity:0;
+    transition:opacity 2.5s ease;
+    pointer-events:none;
+  }
+
+  #ground{
+    position:absolute;
+    bottom:0;left:0;right:0;
+    height:22%;
+    background:linear-gradient(180deg,#5b8a4a,#3c5f31);
+    transition:background 2.5s ease;
+  }
+  #ground.runes::before{
+    content:'';
+    position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg, transparent 0 18px, #ffd76a33 18px 20px);
+    opacity:.6;
+  }
+
+  svg#archer{
+    position:absolute;
+    left:50%;top:52%;
+    width:46%;
+    transform:translate(-50%,-50%);
+    overflow:visible;
+    filter:drop-shadow(0 6px 10px #00000055);
+  }
+
+  .aura{
+    transform-origin:center;
+    animation:spin 14s linear infinite;
+    opacity:0;
+    transition:opacity 2s ease;
+  }
+  @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+  .pulse{animation:pulseGlow 2.2s ease-in-out infinite;}
+  @keyframes pulseGlow{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+  .hidden-part{opacity:0;}
+  .part{transition:opacity 1.2s ease;}
+
+  .wing{transform-origin:6px 0px;}
+  .wingL{animation:flapL 3.4s ease-in-out infinite;}
+  .wingR{animation:flapR 3.4s ease-in-out infinite;}
+  @keyframes flapL{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-6deg);}}
+  @keyframes flapR{0%,100%{transform:rotate(0deg);}50%{transform:rotate(6deg);}}
+
+  #ascendGlow{
+    opacity:0;
+    transition:opacity 2.5s ease;
+  }
+
+  .floatpart{animation:bob 3s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+
+  #clickFx{position:absolute;inset:0;pointer-events:none;overflow:visible;}
+  .arrowfx{
+    position:absolute;
+    font-size:1.1rem;
+    color:var(--accent-2);
+    text-shadow:0 0 6px var(--accent-2);
+    animation:arrowUp 0.9s ease-out forwards;
+    pointer-events:none;
+  }
+  @keyframes arrowUp{
+    0%{opacity:1; transform:translate(0,0) scale(1);}
+    100%{opacity:0; transform:translate(var(--dx,10px),-70px) scale(1.2);}
+  }
+
+  #stageLabel{
+    text-align:center;
+    font-size:.95rem;
+    color:var(--gold);
+    letter-spacing:1px;
+  }
+  #stageLabel small{display:block;color:var(--text-dim);font-weight:normal;font-size:.75rem;margin-top:2px;}
+
+  #milestoneBarWrap{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:.75rem;
+    color:var(--text-dim);
+  }
+  #milestoneBar{
+    height:8px;
+    border-radius:4px;
+    background:#12102066;
+    overflow:hidden;
+    margin-top:4px;
+  }
+  #milestoneFill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,var(--accent-2),var(--gold));
+    transition:width .4s ease;
+  }
+
+  #clickHint{
+    text-align:center;
+    font-size:.8rem;
+    color:var(--text-dim);
+  }
+
+  /* ---------- SIDE PANEL ---------- */
+  #panelCol{
+    flex:1 1 340px;
+    min-width:300px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px;
+  }
+  .panel h2{
+    margin:0 0 8px 0;
+    font-size:.9rem;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:6px;
+  }
+  .tabs{display:flex;gap:6px;margin-bottom:8px;}
+  .tabbtn{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:6px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:.8rem;
+  }
+  .tabbtn.active{color:var(--gold);border-color:var(--gold);}
+
+  .upgradeList{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    max-height:420px;
+    overflow-y:auto;
+    padding-right:2px;
+  }
+  .upgrade{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    cursor:pointer;
+    transition:transform .1s ease, border-color .15s ease;
+  }
+  .upgrade:hover:not(.disabled){border-color:var(--accent);transform:translateY(-1px);}
+  .upgrade.disabled{opacity:.45;cursor:not-allowed;}
+  .upgrade .icon{font-size:1.4rem;width:32px;text-align:center;flex-shrink:0;}
+  .upgrade .info{flex:1;min-width:0;}
+  .upgrade .info .name{font-size:.85rem;font-weight:bold;}
+  .upgrade .info .desc{font-size:.7rem;color:var(--text-dim);}
+  .upgrade .stats{text-align:right;flex-shrink:0;}
+  .upgrade .cost{font-size:.8rem;color:var(--gold);}
+  .upgrade .owned{font-size:.7rem;color:var(--text-dim);}
+
+  #statsList{font-size:.8rem;color:var(--text-dim);line-height:1.7;}
+  #statsList b{color:var(--text);}
+
+  footer{
+    text-align:center;
+    font-size:.7rem;
+    color:#5c5379;
+    padding:14px;
+  }
+
+  /* ---------- OVERLAY ---------- */
+  #overlay{
+    position:fixed;inset:0;
+    background:#000000d9;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:20px;
+  }
+  #overlay.show{display:flex;}
+  #overlayBox{
+    background:linear-gradient(180deg,#241b3d,#150f28);
+    border:1px solid var(--gold);
+    border-radius:16px;
+    padding:28px;
+    max-width:480px;
+    text-align:center;
+    box-shadow:0 0 60px #ffd76a44;
+  }
+  #overlayBox h2{color:var(--gold);margin-top:0;font-size:1.5rem;}
+  #overlayBox p{color:var(--text-dim);font-size:.9rem;line-height:1.5;}
+  #overlayStats{
+    text-align:left;
+    background:#0000003a;
+    border-radius:8px;
+    padding:10px 14px;
+    margin:14px 0;
+    font-size:.85rem;
+  }
+  #overlayStats div{display:flex;justify-content:space-between;padding:3px 0;}
+  .bigbtn{
+    background:linear-gradient(180deg,var(--gold),#e0a83c);
+    border:none;
+    color:#241b3d;
+    font-weight:bold;
+    padding:10px 22px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:.9rem;
+    margin-top:8px;
+  }
+  .bigbtn:hover{filter:brightness(1.08);}
+  .ghostbtn{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:9px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:.85rem;
+    margin-top:8px;
+    margin-left:8px;
+  }
+
+  #toast{
+    position:fixed;
+    bottom:16px;left:50%;
+    transform:translateX(-50%);
+    background:var(--panel-2);
+    border:1px solid var(--accent);
+    color:var(--text);
+    padding:10px 16px;
+    border-radius:8px;
+    font-size:.82rem;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .4s ease, transform .4s ease;
+    z-index:200;
+    max-width:90vw;
+    text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  @media (max-width:700px){
+    header h1{font-size:1rem;}
+    #manaCount{font-size:1.1rem;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div>
+      <h1>Arcane Archer <span>Ascension</span></h1>
+    </div>
+    <div id="resourceDisplay">
+      <div id="manaCount">0 mana</div>
+      <div id="manaRate">+0/sec</div>
+    </div>
+    <div id="headerButtons">
+      <button class="iconbtn" id="muteBtn" title="Toggle sound">🔊</button>
+      <button class="iconbtn" id="resetBtn" title="Start a new journey">↺ Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="sceneCol">
+      <div id="scene">
+        <div id="stars"></div>
+        <div id="nebula"></div>
+        <div id="ground"></div>
+        <svg id="archer" viewBox="-60 -90 120 150" xmlns="http://www.w3.org/2000/svg">
+          <ellipse id="ascendGlow" cx="0" cy="20" rx="55" ry="55" fill="url(#ascendGrad)"/>
+          <defs>
+            <radialGradient id="ascendGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fff6d0" stop-opacity="0.9"/>
+              <stop offset="60%" stop-color="#ffd76a" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#ffd76a" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="auraGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ground shadow -->
+          <ellipse cx="0" cy="46" rx="30" ry="6" fill="#00000030"/>
+
+          <!-- feet-level aura ring, stage 2+ -->
+          <g class="aura part hidden-part" id="auraRing" data-min-stage="2">
+            <circle cx="0" cy="30" r="34" fill="none" stroke="#c9a4ff" stroke-width="1.5" stroke-dasharray="4 5" opacity=".8"/>
+            <circle cx="0" cy="30" r="34" fill="url(#auraGrad)"/>
+          </g>
+
+          <!-- wings, stage 3+ -->
+          <g class="part hidden-part" id="wings" data-min-stage="3">
+            <path class="wing wingL" d="M -8 5 C -40 -10, -55 10, -50 35 C -38 20, -22 15, -8 20 Z" fill="#c9a4ff" opacity="0.75"/>
+            <path class="wing wingR" d="M 8 5 C 40 -10, 55 10, 50 35 C 38 20, 22 15, 8 20 Z" fill="#c9a4ff" opacity="0.75"/>
+          </g>
+
+          <!-- quiver, stage 2+ -->
+          <g class="part hidden-part" id="quiver" data-min-stage="2">
+            <rect x="6" y="-18" width="8" height="24" rx="2" transform="rotate(20 10 -6)" fill="#6b4a2f" stroke="#4a3320"/>
+            <line x1="10" y1="-18" x2="14" y2="-30" stroke="#c9a4ff" stroke-width="2" transform="rotate(20 10 -6)"/>
+          </g>
+
+          <!-- body / robe -->
+          <path id="robe" d="M -16 -10 C -20 10, -22 30, -18 44 L 18 44 C 22 30, 20 10, 16 -10 C 10 -18, -10 -18, -16 -10 Z" fill="#3f3466" stroke="#241b3d" stroke-width="1.5"/>
+          <path id="robeAccent" class="part hidden-part" data-min-stage="2" d="M -16 -10 C -20 10, -22 30, -18 44 L -10 44 C -12 26, -12 8, -8 -12 Z" fill="#7dd3fc" opacity="0.5"/>
+
+          <!-- head -->
+          <circle cx="0" cy="-30" r="12" fill="#e8c9a0"/>
+          <path d="M -12 -32 C -12 -44, 12 -44, 12 -32 C 8 -38, -8 -38, -12 -32 Z" fill="#5b4636"/>
+
+          <!-- halo/crown, stage 4+ -->
+          <g class="part hidden-part floatpart" id="halo" data-min-stage="4">
+            <ellipse cx="0" cy="-48" rx="10" ry="3.5" fill="none" stroke="#ffd76a" stroke-width="2"/>
+            <polygon points="0,-58 -3,-50 3,-50" fill="#ffd76a"/>
+          </g>
+
+          <!-- back arm -->
+          <path d="M -14 -6 C -22 0, -24 10, -20 16" stroke="#3f3466" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+          <!-- bow -->
+          <g id="bowGroup">
+            <path id="bowArc" d="M 20 -28 C 34 -18, 34 8, 20 18" fill="none" stroke="#8a5a33" stroke-width="3.4" stroke-linecap="round"/>
+            <line id="bowString" x1="20" y1="-28" x2="20" y2="18" stroke="#e8e0ff" stroke-width="1"/>
+            <line class="pulse hidden-part part" id="bowGlow" data-min-stage="1" x1="20" y1="-28" x2="20" y2="18" stroke="#7dd3fc" stroke-width="2.5" opacity="0.7"/>
+          </g>
+
+          <!-- front arm -->
+          <path d="M 10 -8 C 18 -6, 22 0, 20 6" stroke="#3f3466" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+          <!-- sparkles orbiting hands, stage1+ -->
+          <g class="part hidden-part" id="sparkles" data-min-stage="1">
+            <circle class="pulse" cx="22" cy="-4" r="2" fill="#ffd76a"/>
+            <circle class="pulse" cx="16" cy="4" r="1.4" fill="#7dd3fc" style="animation-delay:.6s"/>
+          </g>
+        </svg>
+
+        <div id="clickFx"></div>
+      </div>
+
+      <div id="stageLabel">Novice Archer <small id="stageSub">A quiet meadow at dawn</small></div>
+
+      <div id="milestoneBarWrap">
+        <div id="milestoneText">Next milestone: 1,000 lifetime mana</div>
+        <div id="milestoneBar"><div id="milestoneFill"></div></div>
+      </div>
+
+      <div id="clickHint">Click the archer to loose a magic arrow and gather mana ✦</div>
+    </section>
+
+    <section id="panelCol">
+      <div class="panel">
+        <div class="tabs">
+          <button class="tabbtn active" data-tab="generators">Conjurations</button>
+          <button class="tabbtn" data-tab="clickups">Marksmanship</button>
+          <button class="tabbtn" data-tab="stats">Journey</button>
+        </div>
+
+        <div id="tab-generators" class="tabcontent">
+          <div class="upgradeList" id="generatorList"></div>
+        </div>
+        <div id="tab-clickups" class="tabcontent" style="display:none;">
+          <div class="upgradeList" id="clickupList"></div>
+        </div>
+        <div id="tab-stats" class="tabcontent" style="display:none;">
+          <div id="statsList"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Arcane Archer: Ascension — a small, finite incremental. Progress saves automatically in this browser.</footer>
+</div>
+
+<div id="overlay">
+  <div id="overlayBox">
+    <h2 id="overlayTitle">✦ Ascension ✦</h2>
+    <p id="overlayText"></p>
+    <div id="overlayStats"></div>
+    <div>
+      <button class="bigbtn" id="continueBtn">Continue as a Legend</button>
+      <button class="ghostbtn" id="newJourneyBtn">Begin a New Journey</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================ CONFIG ============================ */
+
+const SAVE_KEY = "arcaneArcher_save_v1";
+const TICK_MS = 100;
+const AUTOSAVE_MS = 8000;
+const MAX_OFFLINE_SECONDS = 2 * 60 * 60; // cap offline earnings at 2 hours
+
+const GENERATORS = [
+  { id:"mote",    name:"Spark Mote",       icon:"✦", desc:"A tiny mote of wandering magic.",         baseCost:10,     baseProd:0.5 },
+  { id:"familiar",name:"Ember Familiar",   icon:"🔥", desc:"A small fire spirit that gathers mana.",   baseCost:80,     baseProd:4 },
+  { id:"apprentice",name:"Apprentice Mage",icon:"🧙", desc:"Studies spells to channel more mana.",     baseCost:600,    baseProd:25 },
+  { id:"golem",   name:"Crystal Golem",    icon:"💎", desc:"A slow but powerful mana conduit.",        baseCost:5000,   baseProd:150 },
+  { id:"phoenix", name:"Phoenix Familiar", icon:"🐦‍🔥", desc:"Reborn in flame, endlessly generous.",    baseCost:40000,  baseProd:900 },
+  { id:"tower",   name:"Astral Tower",     icon:"🗼", desc:"Draws mana down from the stars themselves.",baseCost:300000,baseProd:5000 },
+];
+const COST_GROWTH = 1.15;
+
+const CLICK_UPGRADES = [
+  { id:"arrowhead", name:"Sharpened Arrowhead", icon:"🏹", desc:"+1 mana per shot.", cost:50,   type:"add", value:1 },
+  { id:"bowstring",  name:"Enchanted Bowstring", icon:"➰", desc:"Doubles mana per shot.", cost:500,  type:"mult", value:2 },
+  { id:"focus",      name:"Focused Mind",        icon:"🎯", desc:"+3 mana per shot.", cost:2500, type:"add", value:3 },
+  { id:"eagleeye",   name:"Eagle's Eye",         icon:"🦅", desc:"Doubles mana per shot again.", cost:20000,type:"mult", value:2 },
+  { id:"stormarrow", name:"Stormcaller Arrow",   icon:"⚡", desc:"+15 mana per shot.", cost:150000,type:"add", value:15 },
+];
+
+const STAGES = [
+  { min:0,       name:"Novice Archer",    sub:"A quiet meadow at dawn",
+    bg:["#8ecae6","#fefae0"], ground:"#5b8a4a,#3c5f31", stars:0, nebula:0 },
+  { min:1000,    name:"Apprentice Archer",sub:"Golden afternoon light",
+    bg:["#f6c453","#fef3c7"], ground:"#7a9a4a,#556f31", stars:0, nebula:0 },
+  { min:10000,   name:"Adept Spellshot",  sub:"Dusk settles over the hills",
+    bg:["#7b5ea7","#e8935c"], ground:"#4a5a4f,#2c382f", stars:0, nebula:0 },
+  { min:50000,   name:"Battlemage",       sub:"Night falls; the stars awaken",
+    bg:["#241b3d","#4a3466"], ground:"#3a3a52,#22223a", stars:1, nebula:0 },
+  { min:200000,  name:"Archmage",         sub:"Runes glow beneath your feet",
+    bg:["#150f28","#2c1f4a"], ground:"#332a55,#1c1733", stars:1, nebula:1, runes:true },
+  { min:1000000, name:"Ascendant",        sub:"The heavens themselves answer your call",
+    bg:["#0b0620","#1a0f3d"], ground:"#3d2f66,#241a44", stars:1, nebula:1, runes:true, ascend:true },
+];
+const ASCEND_GOAL = 1000000;
+
+/* ============================ STATE ============================ */
+
+let state = {
+  mana:0,
+  lifetimeMana:0,
+  totalClicks:0,
+  generators:{},   // id -> owned count
+  clickUpgrades:{},// id -> bool owned
+  stage:0,
+  startedAt:Date.now(),
+  lastSave:Date.now(),
+  muted:false,
+  ascended:false,
+  ascendedShown:false
+};
+GENERATORS.forEach(g=>state.generators[g.id]=0);
+CLICK_UPGRADES.forEach(c=>state.clickUpgrades[c.id]=false);
+
+/* ============================ AUDIO ============================ */
+
+let audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
+  }
+}
+function pluck(){
+  if(state.muted || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(520 + Math.random()*80, t);
+  osc.frequency.exponentialRampToValueAtTime(200, t+0.15);
+  gain.gain.setValueAtTime(0.08, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t+0.2);
+}
+
+/* ============================ HELPERS ============================ */
+
+function fmt(n){
+  if(n < 1000) return (Math.floor(n*10)/10).toString();
+  const units = ["K","M","B","T","Qa","Qi"];
+  let u = -1;
+  let v = n;
+  while(v >= 1000 && u < units.length-1){ v/=1000; u++; }
+  return v.toFixed(2)+units[u];
+}
+function fmtInt(n){
+  return Math.floor(n).toLocaleString();
+}
+
+function generatorCost(g){
+  return Math.ceil(g.baseCost * Math.pow(COST_GROWTH, state.generators[g.id]));
+}
+function generatorTotalProd(g){
+  return g.baseProd * state.generators[g.id];
+}
+function totalProdPerSec(){
+  return GENERATORS.reduce((s,g)=>s+generatorTotalProd(g),0);
+}
+function clickPower(){
+  let base = 1, mult = 1;
+  CLICK_UPGRADES.forEach(c=>{
+    if(state.clickUpgrades[c.id]){
+      if(c.type==="add") base += c.value;
+      else if(c.type==="mult") mult *= c.value;
+    }
+  });
+  return base*mult;
+}
+
+function currentStageIndex(){
+  let idx=0;
+  for(let i=0;i<STAGES.length;i++){
+    if(state.lifetimeMana >= STAGES[i].min) idx=i;
+  }
+  return idx;
+}
+
+/* ============================ RENDER ============================ */
+
+const $ = id=>document.getElementById(id);
+const manaCountEl = $("manaCount");
+const manaRateEl = $("manaRate");
+const stageLabelEl = $("stageLabel");
+const stageSubEl = $("stageSub");
+const milestoneTextEl = $("milestoneText");
+const milestoneFillEl = $("milestoneFill");
+const generatorListEl = $("generatorList");
+const clickupListEl = $("clickupList");
+const statsListEl = $("statsList");
+const sceneEl = $("scene");
+const starsEl = $("stars");
+const nebulaEl = $("nebula");
+const groundEl = $("ground");
+const ascendGlowEl = $("ascendGlow");
+
+function buildStars(){
+  let html = "";
+  for(let i=0;i<40;i++){
+    const x = Math.random()*100, y = Math.random()*70;
+    const delay = (Math.random()*3).toFixed(2);
+    const size = (Math.random()*1.5+1).toFixed(1);
+    html += `<div class="star" style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;animation-delay:${delay}s;"></div>`;
+  }
+  starsEl.innerHTML = html;
+}
+buildStars();
+
+function applyStageVisuals(stageIdx){
+  const st = STAGES[stageIdx];
+  document.documentElement.style.setProperty("--bg-top", st.bg[0]);
+  document.documentElement.style.setProperty("--bg-bot", st.bg[1]);
+  groundEl.style.background = `linear-gradient(180deg, ${st.ground.split(",")[0]}, ${st.ground.split(",")[1]})`;
+  groundEl.classList.toggle("runes", !!st.runes);
+  starsEl.style.opacity = st.stars ? "1" : "0";
+  nebulaEl.style.opacity = st.nebula ? "1" : "0";
+  ascendGlowEl.style.opacity = st.ascend ? "1" : "0";
+
+  document.querySelectorAll(".part[data-min-stage]").forEach(el=>{
+    const min = parseInt(el.getAttribute("data-min-stage"),10);
+    if(stageIdx >= min){
+      if(el.classList.contains("hidden-part")){
+        el.classList.remove("hidden-part");
+      }
+    } else {
+      el.classList.add("hidden-part");
+    }
+  });
+
+  stageLabelEl.firstChild.textContent = st.name + " ";
+  stageSubEl.textContent = st.sub;
+}
+
+function renderTop(){
+  manaCountEl.textContent = fmtInt(state.mana) + " mana";
+  manaRateEl.textContent = "+" + fmt(totalProdPerSec()) + "/sec";
+}
+
+function renderMilestone(){
+  const idx = currentStageIndex();
+  const next = STAGES[idx+1];
+  if(!next){
+    milestoneTextEl.textContent = "The Ascension is complete.";
+    milestoneFillEl.style.width = "100%";
+    return;
+  }
+  const prevMin = STAGES[idx].min;
+  const span = next.min - prevMin;
+  const progress = Math.min(1, (state.lifetimeMana - prevMin) / span);
+  milestoneTextEl.textContent = `Next milestone: ${fmtInt(next.min)} lifetime mana (${next.name})`;
+  milestoneFillEl.style.width = (progress*100).toFixed(1)+"%";
+}
+
+function renderGenerators(){
+  generatorListEl.innerHTML = "";
+  GENERATORS.forEach(g=>{
+    const cost = generatorCost(g);
+    const owned = state.generators[g.id];
+    const affordable = state.mana >= cost;
+    const div = document.createElement("div");
+    div.className = "upgrade" + (affordable ? "" : " disabled");
+    div.innerHTML = `
+      <div class="icon">${g.icon}</div>
+      <div class="info">
+        <div class="name">${g.name}</div>
+        <div class="desc">${g.desc} <br>Produces ${fmt(g.baseProd)}/sec each.</div>
+      </div>
+      <div class="stats">
+        <div class="cost">${fmtInt(cost)}</div>
+        <div class="owned">owned: ${owned}</div>
+      </div>
+    `;
+    div.addEventListener("click", ()=>buyGenerator(g));
+    generatorListEl.appendChild(div);
+  });
+}
+
+function renderClickUpgrades(){
+  clickupListEl.innerHTML = "";
+  CLICK_UPGRADES.forEach(c=>{
+    const owned = state.clickUpgrades[c.id];
+    const affordable = state.mana >= c.cost;
+    const div = document.createElement("div");
+    div.className = "upgrade" + (owned ? " disabled" : (affordable ? "" : " disabled"));
+    div.innerHTML = `
+      <div class="icon">${c.icon}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="desc">${c.desc}</div>
+      </div>
+      <div class="stats">
+        <div class="cost">${owned ? "owned" : fmtInt(c.cost)}</div>
+      </div>
+    `;
+    if(!owned) div.addEventListener("click", ()=>buyClickUpgrade(c));
+    clickupListEl.appendChild(div);
+  });
+}
+
+function renderStats(){
+  const elapsed = Math.floor((Date.now()-state.startedAt)/1000);
+  const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60), s = elapsed%60;
+  statsListEl.innerHTML = `
+    <div>Time on this journey: <b>${h}h ${m}m ${s}s</b></div>
+    <div>Total shots fired: <b>${fmtInt(state.totalClicks)}</b></div>
+    <div>Mana per click: <b>${fmt(clickPower())}</b></div>
+    <div>Mana per second: <b>${fmt(totalProdPerSec())}</b></div>
+    <div>Lifetime mana gathered: <b>${fmtInt(state.lifetimeMana)}</b></div>
+    <div>Current mana: <b>${fmtInt(state.mana)}</b></div>
+    <div>Rank: <b>${STAGES[currentStageIndex()].name}</b></div>
+    <div>Progress to Ascension: <b>${Math.min(100,(state.lifetimeMana/ASCEND_GOAL*100)).toFixed(2)}%</b></div>
+  `;
+}
+
+function renderAll(){
+  renderTop();
+  renderMilestone();
+  renderGenerators();
+  renderClickUpgrades();
+  renderStats();
+}
+
+/* ============================ ACTIONS ============================ */
+
+function addMana(amount){
+  state.mana += amount;
+  state.lifetimeMana += amount;
+  checkStage();
+  checkAscension();
+}
+
+function buyGenerator(g){
+  const cost = generatorCost(g);
+  if(state.mana < cost) return;
+  state.mana -= cost;
+  state.generators[g.id]++;
+  pluck();
+  renderAll();
+}
+
+function buyClickUpgrade(c){
+  if(state.clickUpgrades[c.id]) return;
+  if(state.mana < c.cost) return;
+  state.mana -= c.cost;
+  state.clickUpgrades[c.id] = true;
+  pluck();
+  renderAll();
+}
+
+let lastStageApplied = -1;
+function checkStage(){
+  const idx = currentStageIndex();
+  if(idx !== state.stage){
+    state.stage = idx;
+  }
+  if(idx !== lastStageApplied){
+    lastStageApplied = idx;
+    applyStageVisuals(idx);
+    if(idx>0){
+      showToast(`✦ You have reached ${STAGES[idx].name}!`);
+    }
+  }
+}
+
+function checkAscension(){
+  if(state.lifetimeMana >= ASCEND_GOAL && !state.ascendedShown){
+    state.ascended = true;
+    state.ascendedShown = true;
+    showAscensionOverlay();
+  }
+}
+
+function showAscensionOverlay(){
+  const elapsed = Math.floor((Date.now()-state.startedAt)/1000);
+  const h = Math.floor(elapsed/3600), m = Math.floor((elapsed%3600)/60), s = elapsed%60;
+  $("overlayTitle").textContent = "✦ Ascension Achieved ✦";
+  $("overlayText").textContent = "You have gathered a million mana and become one with the stars. Your bow now sings with the light of Ascension. This is the end of your journey — but you may continue basking in your power, or begin anew.";
+  $("overlayStats").innerHTML = `
+    <div><span>Time to Ascend</span><b>${h}h ${m}m ${s}s</b></div>
+    <div><span>Total shots fired</span><b>${fmtInt(state.totalClicks)}</b></div>
+    <div><span>Final mana/sec</span><b>${fmt(totalProdPerSec())}</b></div>
+    <div><span>Lifetime mana</span><b>${fmtInt(state.lifetimeMana)}</b></div>
+  `;
+  $("overlay").classList.add("show");
+}
+
+function showToast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=>t.classList.remove("show"), 3400);
+}
+
+function spawnArrowFx(x,y){
+  const fx = $("clickFx");
+  const el = document.createElement("div");
+  el.className = "arrowfx";
+  el.textContent = "+"+fmt(clickPower());
+  el.style.left = x+"px";
+  el.style.top = y+"px";
+  el.style.setProperty("--dx", ((Math.random()*40)-20)+"px");
+  fx.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
+
+sceneEl.addEventListener("click", (e)=>{
+  ensureAudio();
+  const rect = sceneEl.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  addMana(clickPower());
+  state.totalClicks++;
+  spawnArrowFx(x,y);
+  pluck();
+  renderTop();
+  renderMilestone();
+});
+
+/* ============================ TABS ============================ */
+
+document.querySelectorAll(".tabbtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tabbtn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tabcontent").forEach(c=>c.style.display="none");
+    $("tab-"+btn.dataset.tab).style.display = "block";
+    if(btn.dataset.tab === "stats") renderStats();
+  });
+});
+
+/* ============================ GAME LOOP ============================ */
+
+let lastTick = Date.now();
+function tick(){
+  const now = Date.now();
+  const dt = (now-lastTick)/1000;
+  lastTick = now;
+  const gain = totalProdPerSec()*dt;
+  if(gain>0) addMana(gain);
+  renderTop();
+  renderMilestone();
+  renderGenerators();
+  renderClickUpgrades();
+}
+setInterval(tick, TICK_MS);
+setInterval(()=>{ if(document.getElementById("tab-stats").style.display!=="none") renderStats(); }, 1000);
+
+/* ============================ SAVE / LOAD ============================ */
+
+function save(){
+  state.lastSave = Date.now();
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  }catch(e){ /* storage unavailable, ignore */ }
+}
+
+function load(){
+  let raw;
+  try{ raw = localStorage.getItem(SAVE_KEY); }catch(e){ raw = null; }
+  if(!raw) return false;
+  try{
+    const loaded = JSON.parse(raw);
+    state = Object.assign(state, loaded);
+    GENERATORS.forEach(g=>{ if(!(g.id in state.generators)) state.generators[g.id]=0; });
+    CLICK_UPGRADES.forEach(c=>{ if(!(c.id in state.clickUpgrades)) state.clickUpgrades[c.id]=false; });
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function applyOfflineProgress(){
+  const elapsedSec = Math.max(0,(Date.now()-state.lastSave)/1000);
+  if(elapsedSec < 5) return;
+  const capped = Math.min(elapsedSec, MAX_OFFLINE_SECONDS);
+  const rate = totalProdPerSec();
+  const gained = rate*capped;
+  if(gained > 0){
+    addMana(gained);
+    const mins = Math.floor(capped/60);
+    showToast(`Welcome back! Your conjurations gathered ${fmt(gained)} mana while you were away (${mins}m).`);
+  }
+}
+
+/* ============================ BUTTONS ============================ */
+
+$("muteBtn").addEventListener("click", ()=>{
+  state.muted = !state.muted;
+  $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
+  save();
+});
+
+$("resetBtn").addEventListener("click", ()=>{
+  if(confirm("Start a new journey? This will erase your current progress.")){
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+});
+
+$("continueBtn").addEventListener("click", ()=>{
+  $("overlay").classList.remove("show");
+});
+
+$("newJourneyBtn").addEventListener("click", ()=>{
+  if(confirm("Begin a new journey? This will erase your ascended progress.")){
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+});
+
+window.addEventListener("beforeunload", save);
+setInterval(save, AUTOSAVE_MS);
+
+/* ============================ INIT ============================ */
+
+function init(){
+  const hadSave = load();
+  $("muteBtn").textContent = state.muted ? "🔇" : "🔊";
+  lastStageApplied = -1;
+  applyStageVisuals(currentStageIndex());
+  if(hadSave) applyOfflineProgress();
+  if(state.ascended && state.ascendedShown){
+    // already ascended previously; don't re-show overlay automatically
+  }
+  renderAll();
+}
+init();
+
+})();
+</script>
+</body>
+</html>
